@@ -48,8 +48,9 @@ fieldset{border:1.5px solid #d9dbd6;border-radius:4px;margin:0 0 14px;padding:4p
 <dialog id="dTk" style="width:min(94vw,600px)"><h2>Demandes</h2><div id="tkF"><label>Sujet</label><input id="tkS"><label>Message</label><textarea id="tkM" rows="3"></textarea><div class="row"><button id="tkOk">Envoyer</button></div></div><div id="tkL"></div><div class="row"><button class="g" onclick="dTk.close()">Fermer</button></div></dialog>
 
 <dialog id="dAdm" style="width:min(94vw,640px)"><h2>Administration</h2>
-<fieldset><legend>Employés (cartes)</legend><label>Nom</label><input id="eN"><label>Prénom</label><input id="eP"><label>Rôle dans l'entreprise</label><input id="eR"><label>Salaire (€)</label><input id="eS" type="number" min="0"><label>Photo</label><input id="eI" type="file" accept="image/*"><div class="row"><button id="eOk">Créer la carte</button></div><div id="eL" style="margin-top:10px"></div></fieldset>
+<fieldset><legend>Employés (cartes)</legend><label>Nom</label><input id="eN"><label>Prénom</label><input id="eP"><label>Rôle dans l'entreprise</label><input id="eR"><label>Salaire (€)</label><input id="eS" type="number" min="0"><label>ID Discord (facultatif, pour les boutons)</label><input id="eDc" placeholder="ex : 123456789012345678"><label>Photo</label><input id="eI" type="file" accept="image/*"><div class="row"><button id="eOk">Créer la carte</button></div><div id="eL" style="margin-top:10px"></div></fieldset>
 <fieldset><legend>Discord (webhook)</legend><label>URL du webhook</label><input id="wU" placeholder="https://discord.com/api/webhooks/..."><div class="row"><button id="wOk">Enregistrer</button><button class="g" id="wSy">Resynchroniser les messages</button></div></fieldset>
+<fieldset><legend>Boutons de service Discord</legend><label>ID du salon où publier le panneau</label><input id="dCh" placeholder="ex : 123456789012345678"><div class="row"><button id="dPub">Publier le panneau de service</button></div></fieldset>
 <fieldset><legend>Catégorie</legend><label>Nom</label><input id="cN"><div class="row"><button id="cOk">Créer</button></div><div id="cL" style="margin-top:8px"></div></fieldset>
 <fieldset><legend>Nouveau post</legend><label>Catégorie</label><select id="pC"></select><label>Titre</label><input id="pT"><label>Texte</label><textarea id="pX" rows="3"></textarea><label>Image</label><input id="pI" type="file" accept="image/*"><div class="row"><button id="pOk">Publier</button></div></fieldset>
 <fieldset><legend>Images de fond</legend><input id="bgI" type="file" accept="image/*" multiple><div class="row"><button id="bgOk">Ajouter</button></div><div id="bgL" style="margin-top:10px"></div></fieldset>
@@ -57,7 +58,7 @@ fieldset{border:1.5px solid #d9dbd6;border-radius:4px;margin:0 0 14px;padding:4p
 <div class="row"><button class="g" id="adOut">Quitter le mode admin</button><button class="g" onclick="dAdm.close()">Fermer</button></div></dialog>
 
 <script>
-const sb=supabase.createClient('https://hhyciagrrejkzphvhcnm.supabase.co','sb_publishable_AX_wi3_ET8uOT-kEXcmwyA_cMzkYqN0');
+const SB_URL='https://hhyciagrrejkzphvhcnm.supabase.co',sb=supabase.createClient(SB_URL,'sb_publishable_AX_wi3_ET8uOT-kEXcmwyA_cMzkYqN0');
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const lc=s=>String(s||'').trim().toLowerCase(),cap=s=>String(s||'').replace(/(^|\s)\S/g,m=>m.toUpperCase());
 const eur=n=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n||0);
@@ -82,12 +83,12 @@ function render(){
  rSv();rCd()}
 // Navigation
 document.querySelector('.tabs').onclick=e=>{const v=e.target.dataset.v;if(v){view=v;render()}};
-setInterval(()=>{if(view==='sv')rSv()},30000);
+setInterval(()=>{if(view==='sv')load()},30000);
 // Service
 function rSv(){const el=$('#vSv');if(!user&&!admin)return el.innerHTML='<p>Connecte-toi pour accéder aux prises de service.</p>';let h='<h2>Prise de service</h2>';
  if(user&&!me)h+="<p>Ton compte n'est pas enregistré comme employé. Demande à un administrateur de créer ta fiche.</p>";
  if(me){const mine=svcs.filter(s=>s.employe_id===me.id),act=mine.find(s=>!s.end_at),wk=Date.now()-7*864e5,myI=ints.filter(i=>mine.some(s=>s.id===i.service_id)),ai=act&&myI.find(i=>i.status==='en_cours'&&i.service_id===act.id);
-  h+=`<div class="panel"><div class="state ${act?'on':'off'}">En service : ${act?'Oui':'Non'}</div>${act?`<p>Depuis ${new Date(act.start_at).toLocaleString('fr-FR')} (${dur(Date.now()-new Date(act.start_at))})</p>`:''}<div class="row"><button data-a="${act?'out':'in'}">${act?'Quitter mon service':'Prendre mon service'}</button>${act&&!ai?'<button class="alt" data-a="int">Intervention</button>':''}</div>${ai?`<div class="inter"><b>Intervention en cours : ${esc(ai.lieu)}</b><p>${esc(ai.details)}</p><button data-a="end" data-id="${ai.id}">Valider la fin</button></div>`:''}</div>
+  h+=`<div class="panel"><div class="state ${act?'on':'off'}">En service : ${act?'Oui':'Non'}</div>${act?`<p>Depuis ${new Date(act.start_at).toLocaleString('fr-FR')} (${dur(Date.now()-new Date(act.start_at))})</p>`:'<div class="row"><button data-a="in">Prendre mon service</button></div>'}</div>${act?`<div class="panel"><h3 style="margin:0 0 6px;font-size:26px">Interventions</h3>${ai?`<div class="inter"><b>Intervention en cours : ${esc(ai.lieu)}</b><p>${esc(ai.details)}</p><button data-a="end" data-id="${ai.id}">Valider la fin</button></div>`:'<div class="row"><button class="alt" data-a="int">Nouvelle intervention</button></div>'}<div class="row"><button class="g" data-a="out">Quitter mon service</button></div></div>`:''}
   <div class="stats"><div><b>${dur(tot(mine))}</b>Temps total</div><div><b>${dur(tot(mine.filter(s=>new Date(s.start_at)>wk)))}</b>7 derniers jours</div><div><b>${myI.filter(i=>i.status==='terminee').length}</b>Interventions terminées</div><div><b>${mine.length}</b>Prises de service</div></div>`}
  if(admin){h+=`<h2>Équipe</h2><div class="tw"><table><tr><th>Employé</th><th>Rôle</th><th>Statut</th><th>Temps total</th><th>7 jours</th><th>Interventions</th></tr>${emps.map(e=>{const m=svcs.filter(s=>s.employe_id===e.id),on=m.some(s=>!s.end_at),n=ints.filter(i=>m.some(s=>s.id===i.service_id)&&i.status==='terminee').length;
   return`<tr><td>${esc(cap(e.prenom+' '+e.nom))}</td><td>${esc(e.role)}</td><td><span class="dot" style="background:${on?'var(--ok)':'var(--no)'}"></span>${on?'En service':'Hors service'}</td><td>${dur(tot(m))}</td><td>${dur(tot(m.filter(s=>new Date(s.start_at)>Date.now()-7*864e5)))}</td><td>${n}</td></tr>`}).join('')}</table></div>`}
@@ -123,11 +124,11 @@ $('#bV').onclick=()=>{$('#vR').textContent='';dVer.showModal()};
 $('#vOk').onclick=async()=>{const{data}=await sb.from('employes').select('nom,prenom,role,created_at').eq('verif_code',$('#vC').value.trim().toUpperCase()).maybeSingle();
  $('#vR').textContent=data?`✔ Carte authentique : ${cap(data.prenom+' '+data.nom)}, ${data.role}, employé depuis le ${new Date(data.created_at).toLocaleDateString('fr-FR')}.`:'✘ Aucune carte ne correspond à ce code : document non authentique.'};
 $('#eOk').onclick=()=>run(async()=>{if(!$('#eN').value.trim()||!$('#eP').value.trim()||!$('#eR').value.trim())throw'Nom, prénom et rôle requis';
- const r={nom:lc($('#eN').value),prenom:lc($('#eP').value),role:$('#eR').value.trim(),salaire:+$('#eS').value||0};const ph=await up($('#eI').files[0]);if(ph)r.photo_url=ph;
+ const r={nom:lc($('#eN').value),prenom:lc($('#eP').value),role:$('#eR').value.trim(),salaire:+$('#eS').value||0,discord_id:$('#eDc').value.trim()||null};const ph=await up($('#eI').files[0]);if(ph)r.photo_url=ph;
  const{error}=editId?await sb.from('employes').update(r).eq('id',editId):await sb.from('employes').insert({...r,verif_code:'ASR-'+Math.random().toString(36).slice(2,10).toUpperCase()});if(error)throw error;
- editId=null;$('#eOk').textContent='Créer la carte';['eN','eP','eR','eS','eI'].forEach(i=>$('#'+i).value='')},'Fiche employé enregistrée.');
+ editId=null;$('#eOk').textContent='Créer la carte';['eN','eP','eR','eS','eDc','eI'].forEach(i=>$('#'+i).value='')},'Fiche employé enregistrée.');
 $('#eL').onclick=async e=>{const d=e.target.dataset;if(d.ed&&confirm('Supprimer cet employé et son historique ?')){await sb.from('employes').delete().eq('id',d.ed);load()}
- if(d.ee){const x=emps.find(y=>y.id==d.ee);editId=x.id;$('#eN').value=x.nom;$('#eP').value=x.prenom;$('#eR').value=x.role;$('#eS').value=x.salaire;$('#eOk').textContent='Enregistrer les modifications'}};
+ if(d.ee){const x=emps.find(y=>y.id==d.ee);editId=x.id;$('#eN').value=x.nom;$('#eP').value=x.prenom;$('#eR').value=x.role;$('#eS').value=x.salaire;$('#eDc').value=x.discord_id||'';$('#eOk').textContent='Enregistrer les modifications'}};
 // Catégories et posts
 $('#cOk').onclick=()=>run(async()=>{if(!$('#cN').value.trim())throw'Nom requis';const{error}=await sb.from('categories').insert({name:$('#cN').value.trim(),position:Math.max(0,...cats.map(c=>c.position||0))+1});if(error)throw error;$('#cN').value=''},'Catégorie créée.');
 $('#pOk').onclick=()=>run(async()=>{if(!$('#pC').value||!$('#pT').value.trim())throw'Catégorie et titre requis';const image_url=await up($('#pI').files[0]);const{error}=await sb.from('posts').insert({category_id:+$('#pC').value,title:$('#pT').value.trim(),text:$('#pX').value,image_url});if(error)throw error;['pT','pX','pI'].forEach(i=>$('#'+i).value='')},'Post publié.');
@@ -168,6 +169,7 @@ const bgSave=async()=>{const{error}=await sb.from('site_settings').upsert({key:'
 function bgList(){$('#bgL').innerHTML=bgs.map((u,i)=>`<div class="cd"><img src="${esc(u)}" alt="" width="56" height="36" style="object-fit:cover;border-radius:3px"><button class="g" data-bd="${i}">Retirer</button></div>`).join('')}
 $('#bgOk').onclick=()=>run(async()=>{const fs=[...$('#bgI').files];if(!fs.length)throw'Choisis au moins une image';for(const f of fs)bgs.push(await up(f));await bgSave();$('#bgI').value='';bgShow();bgList()},'Fond mis à jour.');
 $('#bgL').onclick=e=>{const i=e.target.dataset.bd;if(i!==undefined)run(async()=>{bgs.splice(+i,1);await bgSave();bgShow();bgList()},'Image retirée.')};
+$('#dPub').onclick=async()=>{const ch=$('#dCh').value.trim();if(!ch)return toast('ID du salon requis.');try{const r=await fetch(SB_URL+'/functions/v1/discord?action=panel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:localStorage.asr_admin_code,channel_id:ch})});const j=await r.json().catch(()=>({}));toast(r.ok?'Panneau publié dans Discord.':'Erreur : '+(j.error||r.status))}catch(e){toast('Fonction Discord injoignable : est-elle déployée ?')}};
 // Démarrage
 sb.auth.getSession().then(({data})=>setU(data.session));
 (async()=>{const c=localStorage.asr_admin_code;if(c){const{data}=await sb.from('access_codes').select('role').eq('code',c).eq('role','admin').maybeSingle();if(data)admin=true;else localStorage.removeItem('asr_admin_code')}load();bgLoad()})();
