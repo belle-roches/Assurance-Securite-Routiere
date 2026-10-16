@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ASR</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--ink:#1a1d21;--y:#ffc400;--bg:#f4f4f1;--g:#5b616a;--ok:#1b8a4b;--no:#c62828;color-scheme:light}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Barlow,system-ui,sans-serif}
+h1,h2,h3,button,label,.brand,dt{font-family:'Barlow Condensed',system-ui,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--ink);color:#fff;border-bottom:6px solid transparent;border-image:repeating-linear-gradient(135deg,var(--y) 0 12px,var(--ink) 12px 24px) 6}
+.hr{display:flex;align-items:center;gap:8px;padding:10px 18px;flex-wrap:wrap}.brand{font-weight:800;font-size:30px;letter-spacing:.08em;color:var(--y);flex:1}
+.tabs{display:flex;gap:4px;padding:0 18px 8px;overflow-x:auto}.tabs button{background:transparent;color:#fff;font-size:17px;padding:6px 14px;border-radius:0;border-bottom:3px solid transparent}.tabs button.on{border-color:var(--y);color:var(--y)}
+button{font-size:16px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;border:0;border-radius:3px;padding:9px 16px;background:var(--y);color:var(--ink);cursor:pointer}
+button.g{background:transparent;border:1.5px solid currentColor;color:inherit}button.alt{background:var(--ink);color:#fff}.hr button.g{color:#fff}
+:focus-visible{outline:3px solid var(--y);outline-offset:2px}
+.heroW{background:var(--ink) center/cover;color:#fff}.hero{max-width:1000px;margin:0 auto;padding:60px 20px 46px}.hero h1{font-size:clamp(38px,8vw,78px);line-height:.95;margin:0 0 10px;text-transform:uppercase;font-weight:800}.hero h1 b{color:var(--y)}.hero p{margin:0;max-width:50ch;color:#dfe2e6}
+.wrap{max-width:1000px;margin:0 auto;padding:24px 20px 80px}h2{font-size:32px;margin:30px 0 12px;text-transform:uppercase;border-left:8px solid var(--y);padding-left:12px}
+.post{display:flex;gap:16px;background:#fff;border:1px solid #d9dbd6;border-radius:4px;margin-bottom:14px;overflow:hidden}.pim{width:200px;flex:none;background:#ccc center/cover}.post>div:last-child{padding:14px}.post h3{margin:0;font-size:24px}.post p{margin:4px 0 8px;white-space:pre-line}
+.mut{color:var(--g)}.panel{background:#fff;border:1px solid #d9dbd6;border-left:8px solid var(--y);border-radius:4px;padding:18px;margin-bottom:16px}
+.state{font:800 30px 'Barlow Condensed';text-transform:uppercase}.state.on{color:var(--ok)}.state.off{color:var(--no)}
+.inter{margin-top:14px;padding:12px;background:#fff8dc;border:1px dashed var(--ink)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}.stats div{background:#fff;border:1px solid #d9dbd6;padding:12px;color:var(--g)}.stats b{display:block;font:800 26px 'Barlow Condensed';color:var(--ink)}
+table{width:100%;border-collapse:collapse;background:#fff;font-size:15px}th,td{padding:8px 10px;border-bottom:1px solid #e3e4df;text-align:left}th{background:var(--ink);color:#fff;font-family:'Barlow Condensed';font-size:16px}.tw{overflow-x:auto}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:20px}
+.card{position:relative;background:#fff;border:2px solid var(--ink);border-radius:10px;overflow:hidden;box-shadow:6px 6px 0 var(--y)}
+.ch{background:var(--ink);color:var(--y);display:flex;justify-content:space-between;padding:8px 14px;font:800 15px 'Barlow Condensed';letter-spacing:.1em}.ch b{font-size:24px}
+.cbd{display:flex;gap:14px;padding:14px}.ph{width:96px;height:120px;background:#d9dbd6 center/cover;border:2px solid var(--ink);flex:none}
+dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:15px}dt{color:var(--g);text-transform:uppercase;font-size:13px}dd{margin:0;font-weight:600;text-transform:capitalize}
+.stamp{position:absolute;right:10px;bottom:6px;width:112px;height:112px;color:#b3261e;opacity:.8;transform:rotate(-14deg);pointer-events:none}.cf{padding:0 14px 12px;color:var(--g);font-size:12px}
+input,select,textarea{font:16px Barlow,sans-serif;padding:9px;border:1.5px solid #b5b9b0;border-radius:3px;background:#fff;width:100%}label{display:block;font-size:15px;font-weight:600;margin:8px 0 3px}.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+dialog{border:0;border-radius:6px;padding:22px;width:min(94vw,560px);max-height:90vh}dialog::backdrop{background:#000a}dialog h2{margin:0 0 6px;font-size:28px}
+fieldset{border:1.5px solid #d9dbd6;border-radius:4px;margin:0 0 14px;padding:4px 14px 14px}legend{font:800 18px 'Barlow Condensed';text-transform:uppercase;background:var(--y);padding:0 8px}
+.tk{border:1px solid #d9dbd6;border-radius:4px;padding:10px 12px;margin-top:10px}.tk h3{margin:0;font-size:19px}.tk p{margin:4px 0}.cd{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #e3e4df;font-size:14px}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:4px;display:none;z-index:9;max-width:90vw}
+@media(max-width:640px){.post{flex-direction:column}.pim{width:100%;height:150px}}
+</style></head><body>
+<header><div class="hr"><span class="brand">ASR</span><button class="g" id="bT">Demandes</button><button class="g" id="bU">Connexion</button><button id="bA">Admin</button></div>
+<nav class="tabs"><button data-v="home" class="on">Accueil</button><button data-v="sv">Service</button><button data-v="cd">Ma carte</button><button id="bV">Vérifier une carte</button></nav></header>
+<div id="vHome"><div class="heroW" id="heroW"><section class="hero"><h1>Toujours là <b>quand il faut</b></h1><p>Le site de l'équipe ASR : prises de service, interventions et cartes professionnelles.</p></section></div><div class="wrap" id="posts"></div></div>
+<div class="wrap" id="vSv" hidden></div><div class="wrap" id="vCd" hidden></div><div id="toast"></div>
+
+<dialog id="dAuth"><h2 id="aT">Connexion</h2><label>Nom RP</label><input id="nom"><label>Prénom RP</label><input id="pre"><label>Mot de passe</label><input id="mdp" type="password"><div id="aC" hidden><label>Code d'accès</label><input id="cod"></div>
+<div class="row"><button id="aOk">Se connecter</button><button class="g" id="aSw">Créer un compte</button><button class="g" onclick="dAuth.close()">Fermer</button></div></dialog>
+<dialog id="dCode"><h2>Accès administrateur</h2><label>Code d'accès</label><input id="adc" type="password"><div class="row"><button id="adOk">Entrer</button><button class="g" onclick="dCode.close()">Annuler</button></div></dialog>
+<dialog id="dInt"><h2>Nouvelle intervention</h2><label>Lieu / titre</label><input id="iL"><label>Détails de l'intervention</label><textarea id="iD" rows="4"></textarea><div class="row"><button id="iOk">Envoyer</button><button class="g" onclick="dInt.close()">Annuler</button></div></dialog>
+<dialog id="dVer"><h2>Vérifier une carte</h2><label>Code du tampon (ex : ASR-AB12CD34)</label><input id="vC"><div class="row"><button id="vOk">Vérifier</button><button class="g" onclick="dVer.close()">Fermer</button></div><p id="vR" style="font-weight:600"></p></dialog>
+<dialog id="dTk" style="width:min(94vw,600px)"><h2>Demandes</h2><div id="tkF"><label>Sujet</label><input id="tkS"><label>Message</label><textarea id="tkM" rows="3"></textarea><div class="row"><button id="tkOk">Envoyer</button></div></div><div id="tkL"></div><div class="row"><button class="g" onclick="dTk.close()">Fermer</button></div></dialog>
+
+<dialog id="dAdm" style="width:min(94vw,640px)"><h2>Administration</h2>
+<fieldset><legend>Employés (cartes)</legend><label>Nom</label><input id="eN"><label>Prénom</label><input id="eP"><label>Rôle dans l'entreprise</label><input id="eR"><label>Salaire (€)</label><input id="eS" type="number" min="0"><label>Photo</label><input id="eI" type="file" accept="image/*"><div class="row"><button id="eOk">Créer la carte</button></div><div id="eL" style="margin-top:10px"></div></fieldset>
+<fieldset><legend>Discord (webhook)</legend><label>URL du webhook</label><input id="wU" placeholder="https://discord.com/api/webhooks/..."><div class="row"><button id="wOk">Enregistrer</button><button class="g" id="wSy">Resynchroniser les messages</button></div></fieldset>
+<fieldset><legend>Catégorie</legend><label>Nom</label><input id="cN"><div class="row"><button id="cOk">Créer</button></div><div id="cL" style="margin-top:8px"></div></fieldset>
+<fieldset><legend>Nouveau post</legend><label>Catégorie</label><select id="pC"></select><label>Titre</label><input id="pT"><label>Texte</label><textarea id="pX" rows="3"></textarea><label>Image</label><input id="pI" type="file" accept="image/*"><div class="row"><button id="pOk">Publier</button></div></fieldset>
+<fieldset><legend>Images de fond</legend><input id="bgI" type="file" accept="image/*" multiple><div class="row"><button id="bgOk">Ajouter</button></div><div id="bgL" style="margin-top:10px"></div></fieldset>
+<fieldset><legend>Codes d'accès</legend><label>Code (vide = généré)</label><input id="kC"><label>Type</label><select id="kR"><option value="compte">Création de compte</option><option value="admin">Admin</option></select><div class="row"><button id="kOk">Créer le code</button></div><div id="kL" style="margin-top:10px"></div></fieldset>
+<div class="row"><button class="g" id="adOut">Quitter le mode admin</button><button class="g" onclick="dAdm.close()">Fermer</button></div></dialog>
+
+<script>
+const sb=supabase.createClient('https://hhyciagrrejkzphvhcnm.supabase.co','sb_publishable_AX_wi3_ET8uOT-kEXcmwyA_cMzkYqN0');
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const lc=s=>String(s||'').trim().toLowerCase(),cap=s=>String(s||'').replace(/(^|\s)\S/g,m=>m.toUpperCase());
+const eur=n=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n||0);
+const dur=ms=>{const m=Math.max(0,Math.floor(ms/60000));return Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')};
+const tot=l=>l.reduce((a,s)=>a+((s.end_at?new Date(s.end_at):new Date())-new Date(s.start_at)),0);
+let user=null,admin=false,reg=false,view='home',editId=null,hook=null,emps=[],svcs=[],ints=[],cats=[],posts=[],me=null;
+const toast=m=>{const t=$('#toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',3800)};
+async function up(f){if(!f)return null;const p=Date.now()+'-'+f.name.replace(/[^\w.]/g,'_');const{error}=await sb.storage.from('media').upload(p,f);if(error)throw error;return sb.storage.from('media').getPublicUrl(p).data.publicUrl}
+async function run(fn,ok){try{await fn();toast(ok);await load()}catch(e){toast('Erreur : '+(e.message||e))}}
+async function load(){const q=t=>sb.from(t).select('*');
+ const[a,b,c,d,e,w]=await Promise.all([q('employes').order('nom'),q('services').order('start_at',{ascending:false}),q('interventions').order('started_at',{ascending:false}),q('categories').order('position'),q('posts').order('created_at',{ascending:false}),sb.from('site_settings').select('value').eq('key','webhook').maybeSingle()]);
+ if(a.error)toast('Erreur : '+a.error.message);emps=a.data||[];svcs=b.data||[];ints=c.data||[];cats=d.data||[];posts=e.data||[];hook=(w.data&&w.data.value)||null;render()}
+function render(){
+ me=user&&emps.find(e=>lc(e.nom)===user.nom&&lc(e.prenom)===user.prenom)||null;
+ $('#bU').textContent=user?cap(user.prenom+' '+user.nom)+' (quitter)':'Connexion';$('#bA').textContent=admin?'Panneau admin':'Admin';
+ document.querySelectorAll('.tabs [data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===view));
+ $('#vHome').hidden=view!=='home';$('#vSv').hidden=view!=='sv';$('#vCd').hidden=view!=='cd';
+ $('#posts').innerHTML=cats.map(c=>`<h2>${esc(c.name)}</h2>${posts.filter(p=>p.category_id===c.id).map(p=>`<article class="post">${p.image_url?`<div class="pim" style="background-image:url('${esc(p.image_url)}')"></div>`:''}<div><h3>${esc(p.title)}</h3><p>${esc(p.text)}</p>${admin?`<button class="g" data-pd="${p.id}">Supprimer</button>`:''}</div></article>`).join('')||'<p class="mut">Rien pour le moment.</p>'}`).join('');
+ $('#pC').innerHTML=cats.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+ $('#cL').innerHTML=cats.map(c=>`<div class="cd"><span>${esc(c.name)}</span><button class="g" data-cd="${c.id}">Supprimer</button></div>`).join('');
+ $('#eL').innerHTML=emps.map(e=>`<div class="cd"><span><b>${esc(cap(e.prenom+' '+e.nom))}</b>, ${esc(e.role)}</span><span><button class="g" data-ee="${e.id}">Modifier</button> <button class="g" data-ed="${e.id}">Supprimer</button></span></div>`).join('');
+ rSv();rCd()}
+// Navigation
+document.querySelector('.tabs').onclick=e=>{const v=e.target.dataset.v;if(v){view=v;render()}};
+setInterval(()=>{if(view==='sv')rSv()},30000);
+// Service
+function rSv(){const el=$('#vSv');if(!user&&!admin)return el.innerHTML='<p>Connecte-toi pour accéder aux prises de service.</p>';let h='<h2>Prise de service</h2>';
+ if(user&&!me)h+="<p>Ton compte n'est pas enregistré comme employé. Demande à un administrateur de créer ta fiche.</p>";
+ if(me){const mine=svcs.filter(s=>s.employe_id===me.id),act=mine.find(s=>!s.end_at),wk=Date.now()-7*864e5,myI=ints.filter(i=>mine.some(s=>s.id===i.service_id)),ai=act&&myI.find(i=>i.status==='en_cours'&&i.service_id===act.id);
+  h+=`<div class="panel"><div class="state ${act?'on':'off'}">En service : ${act?'Oui':'Non'}</div>${act?`<p>Depuis ${new Date(act.start_at).toLocaleString('fr-FR')} (${dur(Date.now()-new Date(act.start_at))})</p>`:''}<div class="row"><button data-a="${act?'out':'in'}">${act?'Quitter mon service':'Prendre mon service'}</button>${act&&!ai?'<button class="alt" data-a="int">Intervention</button>':''}</div>${ai?`<div class="inter"><b>Intervention en cours : ${esc(ai.lieu)}</b><p>${esc(ai.details)}</p><button data-a="end" data-id="${ai.id}">Valider la fin</button></div>`:''}</div>
+  <div class="stats"><div><b>${dur(tot(mine))}</b>Temps total</div><div><b>${dur(tot(mine.filter(s=>new Date(s.start_at)>wk)))}</b>7 derniers jours</div><div><b>${myI.filter(i=>i.status==='terminee').length}</b>Interventions terminées</div><div><b>${mine.length}</b>Prises de service</div></div>`}
+ if(admin){h+=`<h2>Équipe</h2><div class="tw"><table><tr><th>Employé</th><th>Rôle</th><th>Statut</th><th>Temps total</th><th>7 jours</th><th>Interventions</th></tr>${emps.map(e=>{const m=svcs.filter(s=>s.employe_id===e.id),on=m.some(s=>!s.end_at),n=ints.filter(i=>m.some(s=>s.id===i.service_id)&&i.status==='terminee').length;
+  return`<tr><td>${esc(cap(e.prenom+' '+e.nom))}</td><td>${esc(e.role)}</td><td><span class="dot" style="background:${on?'var(--ok)':'var(--no)'}"></span>${on?'En service':'Hors service'}</td><td>${dur(tot(m))}</td><td>${dur(tot(m.filter(s=>new Date(s.start_at)>Date.now()-7*864e5)))}</td><td>${n}</td></tr>`}).join('')}</table></div>`}
+ el.innerHTML=h}
+$('#vSv').onclick=async e=>{const a=e.target.dataset.a;if(!a||!me)return;const id=e.target.dataset.id;
+ if(a==='int')return dInt.showModal();
+ await run(async()=>{const act=svcs.find(s=>s.employe_id===me.id&&!s.end_at);
+  if(a==='in'){const{error}=await sb.from('services').insert({employe_id:me.id,nom:me.nom,prenom:me.prenom});if(error)throw error}
+  if(a==='out'){if(ints.some(i=>i.service_id===act.id&&i.status==='en_cours'))throw"Valide d'abord la fin de ton intervention.";const{error}=await sb.from('services').update({end_at:new Date().toISOString()}).eq('id',act.id);if(error)throw error}
+  if(a==='end'){const{error}=await sb.from('interventions').update({status:'terminee',ended_at:new Date().toISOString()}).eq('id',id);if(error)throw error}
+ },a==='in'?'Service pris.':a==='out'?'Service terminé.':'Intervention terminée.');
+ if(a==='end')await syncInt(ints.find(i=>i.id==id));await syncEmp(me)};
+$('#iOk').onclick=async()=>{const act=me&&svcs.find(s=>s.employe_id===me.id&&!s.end_at);if(!act)return toast("Tu n'es pas en service.");if(!$('#iL').value.trim()||!$('#iD').value.trim())return toast('Lieu et détails requis.');
+ const{data,error}=await sb.from('interventions').insert({service_id:act.id,nom:me.nom,prenom:me.prenom,lieu:$('#iL').value.trim(),details:$('#iD').value.trim()}).select().single();
+ if(error)return toast('Erreur : '+error.message);$('#iL').value=$('#iD').value='';dInt.close();toast('Intervention envoyée.');await load();await syncInt(data);await syncEmp(me)};
+// Discord : les messages sont créés une fois puis modifiés
+async function hk(m,path,body){if(!hook)return null;try{const r=await fetch(hook+path,{method:m,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return r.ok?(m==='PATCH'?{}:await r.json()):null}catch(e){return null}}
+const ts=d=>`<t:${Math.floor(new Date(d)/1e3)}:R>`;
+async function syncEmp(e){if(!hook||!e)return;e=emps.find(x=>x.id===e.id)||e;const m=svcs.filter(s=>s.employe_id===e.id),act=m.find(s=>!s.end_at);
+ const b={embeds:[{title:cap(e.prenom+' '+e.nom)+' ('+e.role+')',color:act?0x2ecc71:0xe74c3c,fields:[{name:'En service',value:act?'🟢 Oui':'🔴 Non',inline:true},{name:'Temps total',value:dur(tot(m))+' h',inline:true},{name:'Depuis',value:act?ts(act.start_at):'—',inline:true}]}]};
+ if(e.discord_msg_id&&await hk('PATCH','/messages/'+e.discord_msg_id,b))return;const r=await hk('POST','?wait=true',b);if(r&&r.id){await sb.from('employes').update({discord_msg_id:r.id}).eq('id',e.id);e.discord_msg_id=r.id}}
+async function syncInt(i){if(!hook||!i)return;i=ints.find(x=>x.id===i.id)||i;const fin=i.status==='terminee';
+ const b={embeds:[{title:'Intervention : '+i.lieu,description:i.details,color:fin?0x2ecc71:0xf39c12,fields:[{name:'Employé',value:cap(i.prenom+' '+i.nom),inline:true},{name:'Statut',value:fin?'🟢 Terminée':'🟠 En cours',inline:true},{name:fin?'Terminée':'Début',value:ts(fin?i.ended_at:i.started_at),inline:true}]}]};
+ if(i.discord_msg_id&&await hk('PATCH','/messages/'+i.discord_msg_id,b))return;const r=await hk('POST','?wait=true',b);if(r&&r.id){await sb.from('interventions').update({discord_msg_id:r.id}).eq('id',i.id);i.discord_msg_id=r.id}}
+$('#wOk').onclick=()=>run(async()=>{const v=$('#wU').value.trim().replace(/\/$/,'');if(!/^https:\/\/(discord|discordapp)\.com\/api\/webhooks\//.test(v))throw"URL de webhook Discord invalide";const{error}=await sb.from('site_settings').upsert({key:'webhook',value:v});if(error)throw error;$('#wU').value=''},'Webhook enregistré.');
+$('#wSy').onclick=async()=>{if(!hook)return toast("Aucun webhook enregistré.");for(const e of emps)await syncEmp(e);toast('Messages Discord mis à jour.')};
+// Cartes employés
+const stamp=e=>`<svg class="stamp" viewBox="0 0 120 120" aria-hidden="true"><defs><path id="sp${e.id}" d="M60,60 m-43,0 a43,43 0 1,1 86,0 a43,43 0 1,1 -86,0"/></defs><circle cx="60" cy="60" r="56" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="60" cy="60" r="34" fill="none" stroke="currentColor" stroke-width="1.5"/><text font-size="10.5" font-weight="800" letter-spacing="1.5" fill="currentColor"><textPath href="#sp${e.id}" startOffset="50%" text-anchor="middle">ASR · AUTHENTIQUE · CERTIFIÉ</textPath></text><text x="60" y="58" text-anchor="middle" font-size="14" font-weight="800" fill="currentColor">VALIDE</text><text x="60" y="73" text-anchor="middle" font-size="8" fill="currentColor">${esc(e.verif_code)}</text></svg>`;
+const cardH=e=>`<div class="card"><div class="ch"><b>ASR</b><span>CARTE PROFESSIONNELLE</span></div><div class="cbd"><div class="ph" style="background-image:url('${esc(e.photo_url)}')"></div><dl><dt>Nom</dt><dd>${esc(e.nom)}</dd><dt>Prénom</dt><dd>${esc(e.prenom)}</dd><dt>Rôle</dt><dd>${esc(e.role)}</dd><dt>Salaire</dt><dd>${eur(e.salaire)}</dd><dt>Matricule</dt><dd>ASR-${String(e.id).padStart(4,'0')}</dd><dt>Entrée</dt><dd>${new Date(e.created_at).toLocaleDateString('fr-FR')}</dd></dl></div><div class="cf">Authenticité vérifiable avec le code du tampon.</div>${stamp(e)}</div>`;
+function rCd(){const el=$('#vCd');if(!user&&!admin)return el.innerHTML='<p>Connecte-toi pour voir ta carte.</p>';const l=admin?emps:me?[me]:[];
+ el.innerHTML='<h2>'+(admin?'Cartes des employés':'Ma carte')+'</h2>'+(l.length?`<div class="cards">${l.map(cardH).join('')}</div>`:"<p>Aucune carte : ton compte n'est pas enregistré comme employé.</p>")}
+$('#bV').onclick=()=>{$('#vR').textContent='';dVer.showModal()};
+$('#vOk').onclick=async()=>{const{data}=await sb.from('employes').select('nom,prenom,role,created_at').eq('verif_code',$('#vC').value.trim().toUpperCase()).maybeSingle();
+ $('#vR').textContent=data?`✔ Carte authentique : ${cap(data.prenom+' '+data.nom)}, ${data.role}, employé depuis le ${new Date(data.created_at).toLocaleDateString('fr-FR')}.`:'✘ Aucune carte ne correspond à ce code : document non authentique.'};
+$('#eOk').onclick=()=>run(async()=>{if(!$('#eN').value.trim()||!$('#eP').value.trim()||!$('#eR').value.trim())throw'Nom, prénom et rôle requis';
+ const r={nom:lc($('#eN').value),prenom:lc($('#eP').value),role:$('#eR').value.trim(),salaire:+$('#eS').value||0};const ph=await up($('#eI').files[0]);if(ph)r.photo_url=ph;
+ const{error}=editId?await sb.from('employes').update(r).eq('id',editId):await sb.from('employes').insert({...r,verif_code:'ASR-'+Math.random().toString(36).slice(2,10).toUpperCase()});if(error)throw error;
+ editId=null;$('#eOk').textContent='Créer la carte';['eN','eP','eR','eS','eI'].forEach(i=>$('#'+i).value='')},'Fiche employé enregistrée.');
+$('#eL').onclick=async e=>{const d=e.target.dataset;if(d.ed&&confirm('Supprimer cet employé et son historique ?')){await sb.from('employes').delete().eq('id',d.ed);load()}
+ if(d.ee){const x=emps.find(y=>y.id==d.ee);editId=x.id;$('#eN').value=x.nom;$('#eP').value=x.prenom;$('#eR').value=x.role;$('#eS').value=x.salaire;$('#eOk').textContent='Enregistrer les modifications'}};
+// Catégories et posts
+$('#cOk').onclick=()=>run(async()=>{if(!$('#cN').value.trim())throw'Nom requis';const{error}=await sb.from('categories').insert({name:$('#cN').value.trim(),position:Math.max(0,...cats.map(c=>c.position||0))+1});if(error)throw error;$('#cN').value=''},'Catégorie créée.');
+$('#pOk').onclick=()=>run(async()=>{if(!$('#pC').value||!$('#pT').value.trim())throw'Catégorie et titre requis';const image_url=await up($('#pI').files[0]);const{error}=await sb.from('posts').insert({category_id:+$('#pC').value,title:$('#pT').value.trim(),text:$('#pX').value,image_url});if(error)throw error;['pT','pX','pI'].forEach(i=>$('#'+i).value='')},'Post publié.');
+$('#cL').onclick=async e=>{const c=e.target.dataset.cd;if(c&&confirm('Supprimer cette catégorie et ses posts ?')){await sb.from('categories').delete().eq('id',c);load()}};
+$('#posts').onclick=async e=>{const p=e.target.dataset.pd;if(p&&confirm('Supprimer ce post ?')){await sb.from('posts').delete().eq('id',p);load()}};
+// Comptes (Supabase Auth)
+const mail=(n,p)=>('asr '+n+' '+p).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'@gmail.com';
+const setU=s=>{const m=s&&s.user.user_metadata;user=m&&m.nom?{nom:m.nom,prenom:m.prenom}:null;render()};
+function authUI(){$('#aT').textContent=reg?'Créer un compte':'Connexion';$('#aC').hidden=!reg;$('#aOk').textContent=reg?'Créer le compte':'Se connecter';$('#aSw').textContent=reg?"J'ai déjà un compte":'Créer un compte'}
+$('#bU').onclick=()=>{if(user){user=null;sb.auth.signOut();render()}else{reg=false;authUI();dAuth.showModal()}};$('#aSw').onclick=()=>{reg=!reg;authUI()};
+$('#aOk').onclick=async()=>{const nom=lc($('#nom').value),prenom=lc($('#pre').value),pw=$('#mdp').value;if(!nom||!prenom||!pw)return toast('Remplissez tous les champs.');
+ if(reg){if(pw.length<6)return toast('Mot de passe : 6 caractères minimum.');const{data:k,error:ke}=await sb.from('access_codes').select('role').eq('code',$('#cod').value.trim()).maybeSingle();
+  if(ke)return toast('Erreur base de données : '+ke.message);if(!k)return toast("Code d'accès invalide.");
+  const{data,error}=await sb.auth.signUp({email:mail(nom,prenom),password:pw,options:{data:{nom,prenom}}});
+  if(error)return toast(/registered|exists/i.test(error.message)?'Ce nom et prénom existent déjà.':'Erreur : '+error.message);
+  if(!data.session)return toast('Compte créé mais non connecté : désactive "Confirm email" dans Supabase > Authentication.');setU(data.session)}
+ else{const{data,error}=await sb.auth.signInWithPassword({email:mail(nom,prenom),password:pw});if(error)return toast(/invalid/i.test(error.message)?'Identifiants incorrects.':'Erreur : '+error.message);setU(data.session)}
+ dAuth.close();toast('Connecté.')};
+// Demandes (tickets)
+async function tickets(){let q=sb.from('tickets').select('*').order('created_at',{ascending:false});if(!admin)q=q.eq('nom',user.nom).eq('prenom',user.prenom);const{data}=await q;
+ $('#tkL').innerHTML=(data||[]).map(t=>`<div class="tk"><h3>${esc(t.sujet)} <small>(${esc(t.status)})</small></h3>${admin?`<small>${esc(cap(t.prenom+' '+t.nom))}</small>`:''}<p>${esc(t.message)}</p>${t.reply?`<p><b>Réponse :</b> ${esc(t.reply)}</p>`:''}${admin?`<div class="row">${t.status==='ouvert'?`<button data-tr="${t.id}">Répondre et fermer</button>`:''}<button class="g" data-td="${t.id}">Supprimer</button></div>`:''}</div>`).join('')||'<p>Aucune demande.</p>'}
+$('#bT').onclick=()=>{if(!user&&!admin)return toast('Connecte-toi pour utiliser les demandes.');$('#tkF').hidden=!user;tickets();dTk.showModal()};
+$('#tkOk').onclick=async()=>{if(!$('#tkS').value.trim())return toast('Sujet requis.');const{error}=await sb.from('tickets').insert({nom:user.nom,prenom:user.prenom,sujet:$('#tkS').value.trim(),message:$('#tkM').value.trim()});if(error)return toast('Erreur : '+error.message);$('#tkS').value=$('#tkM').value='';toast('Demande envoyée.');tickets()};
+$('#tkL').onclick=async e=>{const d=e.target.dataset;if(d.tr){const r=prompt('Réponse :');if(r){await sb.from('tickets').update({reply:r,status:'fermé'}).eq('id',d.tr);tickets()}}if(d.td&&confirm('Supprimer cette demande ?')){await sb.from('tickets').delete().eq('id',d.td);tickets()}};
+// Admin par code (mémorisé sur l'appareil, revérifié à chaque ouverture)
+$('#bA').onclick=()=>{if(admin){codes();bgList();dAdm.showModal()}else dCode.showModal()};
+$('#adOk').onclick=async()=>{const c=$('#adc').value.trim();const{data}=await sb.from('access_codes').select('role').eq('code',c).eq('role','admin').maybeSingle();if(!data)return toast('Code administrateur invalide.');
+ admin=true;localStorage.asr_admin_code=c;dCode.close();$('#adc').value='';render();codes();bgList();dAdm.showModal()};
+$('#adOut').onclick=()=>{admin=false;localStorage.removeItem('asr_admin_code');dAdm.close();render()};
+async function codes(){const{data}=await sb.from('access_codes').select('*').order('created_at',{ascending:false});$('#kL').innerHTML=(data||[]).map(k=>`<div class="cd"><span><b>${esc(k.code)}</b> (${k.role==='admin'?'admin':'compte'})</span><button class="g" data-k="${esc(k.code)}">Supprimer</button></div>`).join('')}
+$('#kOk').onclick=async()=>{const c=$('#kC').value.trim()||Math.random().toString(36).slice(2,10).toUpperCase();const{error}=await sb.from('access_codes').insert({code:c,role:$('#kR').value});if(error)return toast('Code déjà existant.');$('#kC').value='';codes();toast('Code créé : '+c)};
+$('#kL').onclick=async e=>{const k=e.target.dataset.k;if(k&&confirm('Supprimer ce code ?')){await sb.from('access_codes').delete().eq('code',k);codes()}};
+// Images de fond (défilent sur l'accueil)
+let bgs=[],bi=0,bt;
+async function bgLoad(){const{data}=await sb.from('site_settings').select('value').eq('key','bg_urls').maybeSingle();try{bgs=JSON.parse(data&&data.value||'[]')}catch(e){bgs=[]}bgShow();bgList()}
+function bgShow(){const w=$('#heroW');clearInterval(bt);if(!bgs.length){w.style.backgroundImage='';return}const s=()=>{w.style.backgroundImage=`linear-gradient(#1a1d21b8,#1a1d21b8),url('${bgs[bi%bgs.length].replace(/'/g,'%27')}')`;bi++};s();if(bgs.length>1)bt=setInterval(s,6000)}
+const bgSave=async()=>{const{error}=await sb.from('site_settings').upsert({key:'bg_urls',value:JSON.stringify(bgs)});if(error)throw error};
+function bgList(){$('#bgL').innerHTML=bgs.map((u,i)=>`<div class="cd"><img src="${esc(u)}" alt="" width="56" height="36" style="object-fit:cover;border-radius:3px"><button class="g" data-bd="${i}">Retirer</button></div>`).join('')}
+$('#bgOk').onclick=()=>run(async()=>{const fs=[...$('#bgI').files];if(!fs.length)throw'Choisis au moins une image';for(const f of fs)bgs.push(await up(f));await bgSave();$('#bgI').value='';bgShow();bgList()},'Fond mis à jour.');
+$('#bgL').onclick=e=>{const i=e.target.dataset.bd;if(i!==undefined)run(async()=>{bgs.splice(+i,1);await bgSave();bgShow();bgList()},'Image retirée.')};
+// Démarrage
+sb.auth.getSession().then(({data})=>setU(data.session));
+(async()=>{const c=localStorage.asr_admin_code;if(c){const{data}=await sb.from('access_codes').select('role').eq('code',c).eq('role','admin').maybeSingle();if(data)admin=true;else localStorage.removeItem('asr_admin_code')}load();bgLoad()})();
+</script></body></html>
