@@ -50,7 +50,7 @@ fieldset{border:1.5px solid #d9dbd6;border-radius:4px;margin:0 0 14px;padding:4p
 <dialog id="dAdm" style="width:min(94vw,640px)"><h2>Administration</h2>
 <fieldset><legend>Employés (cartes)</legend><label>Nom</label><input id="eN"><label>Prénom</label><input id="eP"><label>Rôle dans l'entreprise</label><input id="eR"><label>Salaire (€)</label><input id="eS" type="number" min="0"><label>ID Discord (facultatif, pour les boutons)</label><input id="eDc" placeholder="ex : 123456789012345678"><label>Photo</label><input id="eI" type="file" accept="image/*"><div class="row"><button id="eOk">Créer la carte</button></div><div id="eL" style="margin-top:10px"></div></fieldset>
 <fieldset><legend>Discord (webhook)</legend><label>URL du webhook</label><input id="wU" placeholder="https://discord.com/api/webhooks/..."><div class="row"><button id="wOk">Enregistrer</button><button class="g" id="wSy">Resynchroniser les messages</button></div></fieldset>
-<fieldset><legend>Boutons de service Discord</legend><label>ID du salon où publier le panneau</label><input id="dCh" placeholder="ex : 123456789012345678"><div class="row"><button id="dPub">Publier le panneau de service</button></div></fieldset>
+<fieldset><legend>Boutons de service Discord</legend><label>ID du salon où publier le panneau</label><input id="dCh" placeholder="ex : 123456789012345678"><div class="row"><button id="dPub">Publier le panneau de service</button></div><label>ID du salon des interventions (ping @everyone)</label><input id="iCh" placeholder="ex : 123456789012345678"><div class="row"><button class="alt" id="iChOk">Enregistrer le salon</button></div></fieldset>
 <fieldset><legend>Catégorie</legend><label>Nom</label><input id="cN"><div class="row"><button id="cOk">Créer</button></div><div id="cL" style="margin-top:8px"></div></fieldset>
 <fieldset><legend>Nouveau post</legend><label>Catégorie</label><select id="pC"></select><label>Titre</label><input id="pT"><label>Texte</label><textarea id="pX" rows="3"></textarea><label>Image</label><input id="pI" type="file" accept="image/*"><div class="row"><button id="pOk">Publier</button></div></fieldset>
 <fieldset><legend>Images de fond</legend><input id="bgI" type="file" accept="image/*" multiple><div class="row"><button id="bgOk">Ajouter</button></div><div id="bgL" style="margin-top:10px"></div></fieldset>
@@ -62,7 +62,7 @@ const SB_URL='https://hhyciagrrejkzphvhcnm.supabase.co',sb=supabase.createClient
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const lc=s=>String(s||'').trim().toLowerCase(),cap=s=>String(s||'').replace(/(^|\s)\S/g,m=>m.toUpperCase());
 const eur=n=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n||0);
-const dur=ms=>{const m=Math.max(0,Math.floor(ms/60000));return Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')};
+const dur=ms=>{const m=Math.max(0,Math.floor(ms/60000));return Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')+' min'};
 const tot=l=>l.reduce((a,s)=>a+((s.end_at?new Date(s.end_at):new Date())-new Date(s.start_at)),0);
 let user=null,admin=false,reg=false,view='home',editId=null,hook=null,emps=[],svcs=[],ints=[],cats=[],posts=[],me=null;
 const toast=m=>{const t=$('#toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',3800)};
@@ -86,33 +86,33 @@ document.querySelector('.tabs').onclick=e=>{const v=e.target.dataset.v;if(v){vie
 setInterval(()=>{if(view==='sv')load()},30000);
 // Service
 function rSv(){const el=$('#vSv');if(!user&&!admin)return el.innerHTML='<p>Connecte-toi pour accéder aux prises de service.</p>';let h='<h2>Prise de service</h2>';
+ const has=(i,id)=>(i.participants||[]).includes(id),names=i=>(i.participants||[]).map(id=>{const e=emps.find(x=>x.id===id);return e?cap(e.prenom+' '+e.nom):'?'}).join(', ')||'Personne';
  if(user&&!me)h+="<p>Ton compte n'est pas enregistré comme employé. Demande à un administrateur de créer ta fiche.</p>";
- if(me){const mine=svcs.filter(s=>s.employe_id===me.id),act=mine.find(s=>!s.end_at),wk=Date.now()-7*864e5,myI=ints.filter(i=>mine.some(s=>s.id===i.service_id)),ai=act&&myI.find(i=>i.status==='en_cours'&&i.service_id===act.id);
-  h+=`<div class="panel"><div class="state ${act?'on':'off'}">En service : ${act?'Oui':'Non'}</div>${act?`<p>Depuis ${new Date(act.start_at).toLocaleString('fr-FR')} (${dur(Date.now()-new Date(act.start_at))})</p>`:'<div class="row"><button data-a="in">Prendre mon service</button></div>'}</div>${act?`<div class="panel"><h3 style="margin:0 0 6px;font-size:26px">Interventions</h3>${ai?`<div class="inter"><b>Intervention en cours : ${esc(ai.lieu)}</b><p>${esc(ai.details)}</p><button data-a="end" data-id="${ai.id}">Valider la fin</button></div>`:'<div class="row"><button class="alt" data-a="int">Nouvelle intervention</button></div>'}<div class="row"><button class="g" data-a="out">Quitter mon service</button></div></div>`:''}
-  <div class="stats"><div><b>${dur(tot(mine))}</b>Temps total</div><div><b>${dur(tot(mine.filter(s=>new Date(s.start_at)>wk)))}</b>7 derniers jours</div><div><b>${myI.filter(i=>i.status==='terminee').length}</b>Interventions terminées</div><div><b>${mine.length}</b>Prises de service</div></div>`}
- if(admin){h+=`<h2>Équipe</h2><div class="tw"><table><tr><th>Employé</th><th>Rôle</th><th>Statut</th><th>Temps total</th><th>7 jours</th><th>Interventions</th></tr>${emps.map(e=>{const m=svcs.filter(s=>s.employe_id===e.id),on=m.some(s=>!s.end_at),n=ints.filter(i=>m.some(s=>s.id===i.service_id)&&i.status==='terminee').length;
+ if(me){const mine=svcs.filter(s=>s.employe_id===me.id),act=mine.find(s=>!s.end_at),wk=Date.now()-7*864e5,open=ints.filter(i=>i.status==='en_cours'),ai=open.find(i=>has(i,me.id)),myI=ints.filter(i=>has(i,me.id)&&i.status==='terminee');
+  h+=`<div class="panel"><div class="state ${act?'on':'off'}">En service : ${act?'Oui':'Non'}</div>${act?`<p>Depuis ${new Date(act.start_at).toLocaleString('fr-FR')} (${dur(Date.now()-new Date(act.start_at))})</p>`:'<div class="row"><button data-a="in">Prendre mon service</button></div>'}</div>${act?`<div class="panel"><h3 style="margin:0 0 6px;font-size:26px">Interventions</h3>${ai?`<div class="inter"><b>Intervention en cours : ${esc(ai.lieu)}</b><p>${esc(ai.details)}</p><small>Intervenants : ${esc(names(ai))}</small><div class="row"><button data-a="end" data-id="${ai.id}">Valider la fin</button></div></div>`:`<div class="row"><button class="alt" data-a="int">Nouvelle intervention</button></div>${open.map(i=>`<div class="inter"><b>${esc(i.lieu)}</b> <small>par ${esc(cap(i.prenom+' '+i.nom))}</small><p>${esc(i.details)}</p><button data-a="take" data-id="${i.id}">Prendre l'intervention</button></div>`).join('')}`}<div class="row"><button class="g" data-a="out">Quitter mon service</button></div></div>`:''}
+  <div class="stats"><div><b>${dur(tot(mine))}</b>Temps total</div><div><b>${dur(tot(mine.filter(s=>new Date(s.start_at)>wk)))}</b>7 derniers jours</div><div><b>${myI.length}</b>Interventions terminées</div><div><b>${mine.length}</b>Prises de service</div></div>`}
+ if(admin){h+=`<h2>Équipe</h2><div class="tw"><table><tr><th>Employé</th><th>Rôle</th><th>Statut</th><th>Temps total</th><th>7 jours</th><th>Interventions</th></tr>${emps.map(e=>{const m=svcs.filter(s=>s.employe_id===e.id),on=m.some(s=>!s.end_at),n=ints.filter(i=>has(i,e.id)&&i.status==='terminee').length;
   return`<tr><td>${esc(cap(e.prenom+' '+e.nom))}</td><td>${esc(e.role)}</td><td><span class="dot" style="background:${on?'var(--ok)':'var(--no)'}"></span>${on?'En service':'Hors service'}</td><td>${dur(tot(m))}</td><td>${dur(tot(m.filter(s=>new Date(s.start_at)>Date.now()-7*864e5)))}</td><td>${n}</td></tr>`}).join('')}</table></div>`}
  el.innerHTML=h}
-$('#vSv').onclick=async e=>{const a=e.target.dataset.a;if(!a||!me)return;const id=e.target.dataset.id;
+$('#vSv').onclick=async e=>{const a=e.target.dataset.a;if(!a||!me)return;const id=+e.target.dataset.id;
  if(a==='int')return dInt.showModal();
  await run(async()=>{const act=svcs.find(s=>s.employe_id===me.id&&!s.end_at);
   if(a==='in'){const{error}=await sb.from('services').insert({employe_id:me.id,nom:me.nom,prenom:me.prenom});if(error)throw error}
-  if(a==='out'){if(ints.some(i=>i.service_id===act.id&&i.status==='en_cours'))throw"Valide d'abord la fin de ton intervention.";const{error}=await sb.from('services').update({end_at:new Date().toISOString()}).eq('id',act.id);if(error)throw error}
+  if(a==='out'){if(ints.some(i=>i.status==='en_cours'&&(i.participants||[]).includes(me.id)))throw"Valide d'abord la fin de ton intervention.";const{error}=await sb.from('services').update({end_at:new Date().toISOString()}).eq('id',act.id);if(error)throw error}
   if(a==='end'){const{error}=await sb.from('interventions').update({status:'terminee',ended_at:new Date().toISOString()}).eq('id',id);if(error)throw error}
- },a==='in'?'Service pris.':a==='out'?'Service terminé.':'Intervention terminée.');
- if(a==='end')await syncInt(ints.find(i=>i.id==id));await syncEmp(me)};
+  if(a==='take'){const iv=ints.find(i=>i.id===id);const{error}=await sb.from('interventions').update({participants:[...(iv.participants||[]),me.id]}).eq('id',id);if(error)throw error}
+ },{in:'Service pris.',out:'Service terminé.',end:'Intervention terminée.',take:'Intervention prise.'}[a]);
+ if(a==='end'||a==='take')await syncInt({id});await syncEmp(me)};
 $('#iOk').onclick=async()=>{const act=me&&svcs.find(s=>s.employe_id===me.id&&!s.end_at);if(!act)return toast("Tu n'es pas en service.");if(!$('#iL').value.trim()||!$('#iD').value.trim())return toast('Lieu et détails requis.');
- const{data,error}=await sb.from('interventions').insert({service_id:act.id,nom:me.nom,prenom:me.prenom,lieu:$('#iL').value.trim(),details:$('#iD').value.trim()}).select().single();
+ const{data,error}=await sb.from('interventions').insert({service_id:act.id,nom:me.nom,prenom:me.prenom,lieu:$('#iL').value.trim(),details:$('#iD').value.trim(),participants:[me.id]}).select().single();
  if(error)return toast('Erreur : '+error.message);$('#iL').value=$('#iD').value='';dInt.close();toast('Intervention envoyée.');await load();await syncInt(data);await syncEmp(me)};
 // Discord : les messages sont créés une fois puis modifiés
 async function hk(m,path,body){if(!hook)return null;try{const r=await fetch(hook+path,{method:m,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return r.ok?(m==='PATCH'?{}:await r.json()):null}catch(e){return null}}
 const ts=d=>`<t:${Math.floor(new Date(d)/1e3)}:R>`;
 async function syncEmp(e){if(!hook||!e)return;e=emps.find(x=>x.id===e.id)||e;const m=svcs.filter(s=>s.employe_id===e.id),act=m.find(s=>!s.end_at);
- const b={embeds:[{title:cap(e.prenom+' '+e.nom)+' ('+e.role+')',color:act?0x2ecc71:0xe74c3c,fields:[{name:'En service',value:act?'🟢 Oui':'🔴 Non',inline:true},{name:'Temps total',value:dur(tot(m))+' h',inline:true},{name:'Depuis',value:act?ts(act.start_at):'—',inline:true}]}]};
+ const b={embeds:[{title:cap(e.prenom+' '+e.nom)+' ('+e.role+')',color:act?0x2ecc71:0xe74c3c,fields:[{name:'En service',value:act?'🟢 Oui':'🔴 Non',inline:true},{name:'Temps total',value:dur(tot(m)),inline:true},{name:'Depuis',value:act?ts(act.start_at):'—',inline:true}]}]};
  if(e.discord_msg_id&&await hk('PATCH','/messages/'+e.discord_msg_id,b))return;const r=await hk('POST','?wait=true',b);if(r&&r.id){await sb.from('employes').update({discord_msg_id:r.id}).eq('id',e.id);e.discord_msg_id=r.id}}
-async function syncInt(i){if(!hook||!i)return;i=ints.find(x=>x.id===i.id)||i;const fin=i.status==='terminee';
- const b={embeds:[{title:'Intervention : '+i.lieu,description:i.details,color:fin?0x2ecc71:0xf39c12,fields:[{name:'Employé',value:cap(i.prenom+' '+i.nom),inline:true},{name:'Statut',value:fin?'🟢 Terminée':'🟠 En cours',inline:true},{name:fin?'Terminée':'Début',value:ts(fin?i.ended_at:i.started_at),inline:true}]}]};
- if(i.discord_msg_id&&await hk('PATCH','/messages/'+i.discord_msg_id,b))return;const r=await hk('POST','?wait=true',b);if(r&&r.id){await sb.from('interventions').update({discord_msg_id:r.id}).eq('id',i.id);i.discord_msg_id=r.id}}
+async function syncInt(i){if(!i)return;try{await fetch(SB_URL+'/functions/v1/discord?action=sync_int&id='+i.id,{method:'POST'})}catch(e){}}
 $('#wOk').onclick=()=>run(async()=>{const v=$('#wU').value.trim().replace(/\/$/,'');if(!/^https:\/\/(discord|discordapp)\.com\/api\/webhooks\//.test(v))throw"URL de webhook Discord invalide";const{error}=await sb.from('site_settings').upsert({key:'webhook',value:v});if(error)throw error;$('#wU').value=''},'Webhook enregistré.');
 $('#wSy').onclick=async()=>{if(!hook)return toast("Aucun webhook enregistré.");for(const e of emps)await syncEmp(e);toast('Messages Discord mis à jour.')};
 // Cartes employés
@@ -170,6 +170,7 @@ function bgList(){$('#bgL').innerHTML=bgs.map((u,i)=>`<div class="cd"><img src="
 $('#bgOk').onclick=()=>run(async()=>{const fs=[...$('#bgI').files];if(!fs.length)throw'Choisis au moins une image';for(const f of fs)bgs.push(await up(f));await bgSave();$('#bgI').value='';bgShow();bgList()},'Fond mis à jour.');
 $('#bgL').onclick=e=>{const i=e.target.dataset.bd;if(i!==undefined)run(async()=>{bgs.splice(+i,1);await bgSave();bgShow();bgList()},'Image retirée.')};
 $('#dPub').onclick=async()=>{const ch=$('#dCh').value.trim();if(!ch)return toast('ID du salon requis.');try{const r=await fetch(SB_URL+'/functions/v1/discord?action=panel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:localStorage.asr_admin_code,channel_id:ch})});const j=await r.json().catch(()=>({}));toast(r.ok?'Panneau publié dans Discord.':'Erreur : '+(j.error||r.status))}catch(e){toast('Fonction Discord injoignable : est-elle déployée ?')}};
+$('#iChOk').onclick=()=>run(async()=>{const v=$('#iCh').value.trim();if(!/^\d{5,25}$/.test(v))throw'ID de salon invalide';const{error}=await sb.from('site_settings').upsert({key:'int_channel',value:v});if(error)throw error},'Salon des interventions enregistré.');
 // Démarrage
 sb.auth.getSession().then(({data})=>setU(data.session));
 (async()=>{const c=localStorage.asr_admin_code;if(c){const{data}=await sb.from('access_codes').select('role').eq('code',c).eq('role','admin').maybeSingle();if(data)admin=true;else localStorage.removeItem('asr_admin_code')}load();bgLoad()})();
